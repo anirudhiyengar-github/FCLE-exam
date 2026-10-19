@@ -1,0 +1,872 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>FCLE Practice Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout: one calm reading column for dashboard and results; test screen splits passage | question like the real test delivery system. */
+:root{
+  --bg:#f2f5f7; --surface:#ffffff; --sunk:#e8edf1; --ink:#15202a; --muted:#5a6775; --line:#d5dde4;
+  --accent:#1c5683; --accent-ink:#ffffff; --accent-soft:#deeaf4; --flag:#9c6b06; --flag-soft:#f6ebd2;
+  --good:#1d7444; --good-soft:#e0f1e7; --warn:#966008; --warn-soft:#f5ead3; --bad:#ab3537; --bad-soft:#f6e1e1;
+  --f-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-doc:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --f-num:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f151b; --surface:#172029; --sunk:#1d2832; --ink:#e4eaef; --muted:#9aa8b5; --line:#2b3743;
+  --accent:#6ea9d8; --accent-ink:#0c1620; --accent-soft:#1b2e3e; --flag:#e3b24e; --flag-soft:#3a2f17;
+  --good:#5cc28a; --good-soft:#173326; --warn:#e2a744; --warn-soft:#382b14; --bad:#ec7b7b; --bad-soft:#3b1d1f; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#172029; --sunk:#1d2832; --ink:#e4eaef; --muted:#9aa8b5; --line:#2b3743;
+  --accent:#6ea9d8; --accent-ink:#0c1620; --accent-soft:#1b2e3e; --flag:#e3b24e; --flag-soft:#3a2f17;
+  --good:#5cc28a; --good-soft:#173326; --warn:#e2a744; --warn-soft:#382b14; --bad:#ec7b7b; --bad-soft:#3b1d1f; color-scheme:dark; }
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+#app{max-width:960px;margin:0 auto;padding-block:20px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:13px} .strong{font-weight:600}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+
+.btn{font:inherit;font-weight:600;font-size:14px;border-radius:8px;padding:9px 16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.small-btn{padding:6px 12px;font-size:13px}
+.link{font:inherit;font-size:13px;font-weight:600;background:none;border:0;color:var(--accent);cursor:pointer;padding:4px}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.none{background:var(--sunk);color:var(--muted)}
+
+.bar{position:relative;height:8px;background:var(--sunk);border-radius:4px;overflow:visible}
+.bar span{display:block;height:100%;border-radius:4px;background:var(--accent);transition:width .4s}
+.bar.good span{background:var(--good)} .bar.warn span{background:var(--warn)} .bar.bad span{background:var(--bad)}
+.bar .mark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.55;border-radius:1px}
+
+/* dashboard */
+.masthead{padding-block:12px 4px}
+.masthead h1{font-family:var(--f-doc);font-weight:600;font-size:clamp(28px,5vw,40px);line-height:1.15;margin-top:6px}
+.lede{max-width:62ch;color:var(--muted);margin-top:10px;font-size:16px}
+.resume{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;border-color:var(--accent);background:var(--accent-soft)}
+.ready{display:flex;flex-wrap:wrap;gap:24px;align-items:center}
+.ready-score{display:flex;flex-direction:column}
+.ready-score .num{font-size:44px;font-weight:600;line-height:1}
+.ready-text{flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ready-text .bar{width:100%;max-width:420px;margin-top:4px}
+.section-h{font-size:17px;font-weight:600;margin-top:18px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.mode{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.mode p{color:var(--muted);flex:1}
+.mode h3{font-size:17px}
+.mode.feature{border:2px solid var(--accent)}
+.comps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.comp-btn{font:inherit;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.comp-btn:hover{border-color:var(--accent)}
+.cn{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.ct{font-weight:600}
+.mastery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:12px}
+.m-comp{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.m-comp h4{font-size:14px;margin-bottom:6px}
+.m-row{font:inherit;color:var(--ink);background:none;border:0;border-radius:6px;padding:6px 4px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(60px,1fr) 44px;gap:12px;align-items:center;text-align:left;cursor:pointer}
+.m-row:hover{background:var(--sunk)}
+.m-name{font-size:14px;min-width:0}
+.m-val{font-family:var(--f-num);font-size:13px;text-align:right;font-weight:600}
+.m-val.good{color:var(--good)} .m-val.warn{color:var(--warn)} .m-val.bad{color:var(--bad)} .m-val.none{color:var(--muted)}
+.history{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.h-row{font:inherit;color:var(--ink);width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;text-align:left;cursor:pointer}
+.h-row:hover{border-color:var(--accent)}
+.h-label,.h-score{display:flex;flex-direction:column}
+.h-score{align-items:flex-end}
+.h-score .num{font-weight:600;font-size:17px}
+.foot{margin-top:24px;max-width:70ch}
+
+/* test */
+#app:has(.testbar){max-width:1180px}
+.testbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));background:var(--surface);border-bottom:1px solid var(--line);margin-top:-20px}
+.tb-inner{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tb-left{display:flex;flex-direction:column}
+.tb-right{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.clock{font-family:var(--f-num);font-size:16px;font-weight:600;padding:4px 10px;background:var(--sunk);border-radius:6px}
+.progress{height:3px;background:var(--sunk)} .progress span{display:block;height:100%;background:var(--accent);transition:width .3s}
+.confirm{border-color:var(--accent);display:flex;flex-direction:column;gap:12px}
+.note{background:var(--accent-soft);border-color:transparent}
+.navgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px}
+.nav-cell{font:inherit;font-family:var(--f-num);font-size:13px;height:36px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.nav-cell.done{background:var(--accent-soft);border-color:var(--accent-soft)}
+.nav-cell.flag{box-shadow:inset 0 -3px 0 var(--flag)}
+.nav-cell.cur{outline:2px solid var(--accent);outline-offset:1px}
+.legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:4px}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--line);background:var(--surface);vertical-align:-2px;margin-right:4px}
+.sw.done{background:var(--accent-soft);border-color:var(--accent-soft)} .sw.flag{box-shadow:inset 0 -3px 0 var(--flag)}
+
+.qwrap{display:grid;gap:20px;margin-top:6px}
+@media (min-width:900px){ .qwrap.has-p{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start} .qwrap.has-p .passage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 86px)} }
+.passage{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;min-width:0}
+.p-label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.passage blockquote{margin:14px 0;font-family:var(--f-doc);font-size:17px;line-height:1.7}
+.p-src{display:block;font-size:13px;color:var(--muted);font-style:italic;font-family:var(--f-doc);border-top:1px solid var(--line);padding-top:10px}
+.question{min-width:0;display:flex;flex-direction:column;gap:14px;max-width:70ch}
+.q-stem{font-size:18px;font-weight:600;line-height:1.45}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;font-size:15px;text-align:left;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.letter{flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--f-num);font-size:13px;font-weight:600}
+.opt.chosen{border-color:var(--accent);background:var(--accent-soft)}
+.opt.chosen .letter{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.right .letter{background:var(--good);border-color:var(--good);color:var(--surface)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .letter{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.feedback{border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.feedback.good{background:var(--good-soft)} .feedback.bad{background:var(--bad-soft)}
+.qnav{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-top:6px}
+.flagbtn.on{background:var(--flag-soft);border-color:var(--flag);color:var(--flag)}
+.keys{display:none}
+@media (hover:hover) and (min-width:700px){ .keys{display:block} }
+
+/* results */
+.back{margin-bottom:-4px}
+.r-hero{display:flex;flex-wrap:wrap;gap:28px;align-items:center}
+.r-score{display:flex;flex-direction:column;gap:4px}
+.r-score .big{font-size:64px;font-weight:600;line-height:1}
+.r-sum{flex:1;min-width:240px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.r-sum .bar{width:100%}
+.r-head{font-family:var(--f-doc);font-size:20px;font-weight:600;line-height:1.35}
+.comp-res,.styles{display:flex;flex-direction:column;gap:14px}
+.cr-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(80px,1.2fr) 64px 100px;gap:14px;align-items:center}
+.styles .cr-row{grid-template-columns:minmax(0,1.4fr) minmax(80px,1.2fr) 64px}
+.cr-name{display:flex;flex-direction:column;font-weight:600;min-width:0}
+.cr-val{display:flex;flex-direction:column;align-items:flex-end}
+.cr-val .num{font-weight:600}
+.cr-row .pill{justify-self:start}
+.tip{background:var(--sunk);border-radius:8px;padding:12px 14px}
+.revise{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}
+.rv{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.rv-head{display:flex;gap:12px;align-items:flex-start}
+.rv h3{font-size:16px}
+.rank{flex:none;width:28px;height:28px;border-radius:50%;background:var(--bad-soft);color:var(--bad);display:grid;place-items:center;font-family:var(--f-num);font-weight:600}
+.rv ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;flex:1}
+.tbl-wrap{padding:0;overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+.tbl th,.tbl td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:left}
+.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .r{text-align:right}
+.next-steps{margin-top:6px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs button{font:inherit;font-size:14px;font-weight:600;background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted);cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.review{display:flex;flex-direction:column;gap:12px}
+.rev{display:flex;flex-direction:column;gap:10px}
+.rev.no{border-left:4px solid var(--bad)} .rev.ok{border-left:4px solid var(--good)}
+.rev .q-stem{font-size:16px}
+.rev-p{margin:0;font-family:var(--f-doc);font-size:15px;line-height:1.65;background:var(--sunk);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.rev-p .p-src{border-top:0;padding-top:0}
+.rev-opts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rev-opts li{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:6px;font-size:14px}
+.rev-opts li em{margin-left:auto;font-style:normal;font-size:12px;font-weight:600;white-space:nowrap;padding-left:8px}
+.rev-opts li.right{background:var(--good-soft)} .rev-opts li.right em{color:var(--good)}
+.rev-opts li.wrong{background:var(--bad-soft)} .rev-opts li.wrong em{color:var(--bad)}
+.rev-opts .letter{width:22px;height:22px;font-size:12px}
+.bad-text{color:var(--bad)}
+.expl{font-size:14px}
+
+@media (max-width:600px){
+  .cr-row{grid-template-columns:minmax(0,1fr) 64px;row-gap:6px}
+  .cr-row .cr-bar{grid-column:1/-1;grid-row:2}
+  .cr-row .pill{grid-column:1;grid-row:3}
+  .styles .cr-row{grid-template-columns:minmax(0,1fr) 64px}
+  .m-row{grid-template-columns:minmax(0,1fr) 70px 40px}
+  .h-row{grid-template-columns:minmax(0,1fr) auto}
+  .h-row .pill{grid-column:1/-1;justify-self:start}
+  .r-score .big{font-size:52px}
+  .tb-left .small{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+<div id="app"></div>
+<script>
+const COMPS = {
+  1: "American Democracy",
+  2: "The U.S. Constitution",
+  3: "Founding Documents",
+  4: "Landmark Cases & Laws"
+};
+
+const TOPICS = {
+  roots: { c: 1, name: "Ancient & Enlightenment roots", notes: [
+    "Athens = direct democracy (citizens vote on laws). Rome = republic (citizens elect representatives).",
+    "Locke: natural rights (life, liberty, property), government by consent, right to replace a bad government. This is the Declaration's backbone.",
+    "Montesquieu: separate legislative, executive, and judicial power to protect liberty.",
+    "Hobbes: people should give up freedom to an absolute ruler. Rousseau: social contract and the general will."
+  ]},
+  principles: { c: 1, name: "Principles of government", notes: [
+    "Rule of law: no one, including officials, is above the law.",
+    "Popular sovereignty: power comes from the people (elections, ballot measures, consent).",
+    "Limited government: the Constitution lists what government cannot do.",
+    "Separation of powers splits branches; checks and balances lets them limit each other; federalism splits national vs. state.",
+    "Majority rule with minority rights. Civil law = private disputes; criminal law = government prosecutes a crime."
+  ]},
+  forms: { c: 1, name: "Forms of government", notes: [
+    "Constitutional republic: elected representatives + written limits on power.",
+    "Absolute vs. constitutional monarchy; dictatorship and totalitarian states; oligarchy (rule by a few).",
+    "Parliamentary system: the legislature's majority picks the prime minister. Presidential system: executive elected separately.",
+    "Unitary (central power), federal (shared), confederal (states strong, center weak, like the Articles)."
+  ]},
+  participation: { c: 1, name: "Citizenship & participation", notes: [
+    "Rights (voting, joining a party) vs. legal duties (taxes, jury duty, obeying laws).",
+    "Naturalization is how immigrants become citizens.",
+    "Parties run candidates to win elections; interest groups lobby on issues.",
+    "Match the problem to the right level of government: local, state, or federal."
+  ]},
+  structure: { c: 2, name: "Branches & their powers", notes: [
+    "Article I Congress, II President, III Courts, IV States, V Amendments, VI Supremacy, VII Ratification.",
+    "Congress declares war, taxes, coins money, regulates interstate commerce. The president commands the military.",
+    "Impeachment: House charges (majority), Senate tries (two-thirds to remove).",
+    "Treaties need two-thirds of the Senate; appointments need Senate approval; federal judges serve “during good behaviour.”",
+    "Habeas corpus: the government must justify holding a prisoner before a judge."
+  ]},
+  federalism: { c: 2, name: "Federalism & supremacy", notes: [
+    "Delegated (national), reserved (states, Tenth Amendment), concurrent (both, e.g., taxing).",
+    "Supremacy Clause (Article VI): valid federal law beats conflicting state law.",
+    "Necessary and Proper Clause = implied powers (upheld in McCulloch v. Maryland)."
+  ]},
+  bor: { c: 2, name: "Bill of Rights", notes: [
+    "1st: religion (Establishment vs. Free Exercise), speech, press, assembly, petition.",
+    "4th: searches need warrants/probable cause. 5th: self-incrimination, double jeopardy, due process.",
+    "6th: speedy public trial, jury, lawyer. 7th: civil juries. 8th: no excessive bail or cruel and unusual punishment.",
+    "9th: rights not listed are still kept by the people. 10th: reserved powers."
+  ]},
+  amendments: { c: 2, name: "Later amendments & amending", notes: [
+    "13th ends slavery (1865); 14th citizenship, due process, equal protection (1868); 15th race and voting (1870).",
+    "17th direct election of senators; 19th women's suffrage; 24th bans poll taxes; 26th voting age 18.",
+    "Article V: two-thirds of Congress proposes, three-fourths of states ratify."
+  ]},
+  english: { c: 3, name: "English & colonial roots", notes: [
+    "Magna Carta (1215): even the king is bound by law.",
+    "Mayflower Compact (1620): self-government by agreement, laws for the general good.",
+    "English Bill of Rights (1689): source of the Eighth Amendment wording and the right to petition.",
+    "“No taxation without representation”: taxes require consent through your own representatives."
+  ]},
+  declaration: { c: 3, name: "Declaration of Independence", notes: [
+    "Purpose: justify independence. It did not create a government.",
+    "Unalienable natural rights; government by consent; right to alter or abolish (Locke).",
+    "Grievances led to Constitution features: taxing power in the House, jury trials, no quartering of troops.",
+    "Washington's Farewell Address warned against political parties and permanent foreign alliances."
+  ]},
+  convention: { c: 3, name: "Articles & the Convention", notes: [
+    "Articles weaknesses: no power to tax, no executive, no national courts, unanimous vote to amend.",
+    "Shays' Rebellion exposed that weakness. Northwest Ordinance was the Articles' big success.",
+    "Virginia Plan (population) vs. New Jersey Plan (equal). Great Compromise = House + Senate.",
+    "Three-Fifths Compromise counted enslaved people for representation and taxes."
+  ]},
+  ratification: { c: 3, name: "Federalist vs. Anti-Federalist", notes: [
+    "Fed. 10: a large republic controls factions. Fed. 51: “ambition must counteract ambition” (checks and balances).",
+    "Fed. 70: a single, energetic executive. Fed. 78: independent judiciary, “least dangerous” branch.",
+    "Brutus No. 1: a huge, diverse republic can't work; feared the Necessary and Proper and Supremacy Clauses.",
+    "Promise of a Bill of Rights won ratification."
+  ]},
+  laterdocs: { c: 3, name: "Later founding-era documents", notes: [
+    "Declaration of Sentiments (1848) copied the Declaration's form to demand women's rights.",
+    "Emancipation Proclamation (1863) freed people only in rebelling areas; the 13th Amendment ended slavery everywhere.",
+    "Gettysburg Address ties the nation's purpose to the Declaration's ideal of equality."
+  ]},
+  federal: { c: 4, name: "Cases on federal power", notes: [
+    "Marbury v. Madison (1803): judicial review.",
+    "McCulloch v. Maryland (1819): implied powers; states can't tax federal institutions.",
+    "Gibbons v. Ogden (1824): broad federal power over interstate commerce."
+  ]},
+  civil: { c: 4, name: "Civil rights cases", notes: [
+    "Dred Scott (1857): Black Americans not citizens; overturned by the 13th and 14th Amendments.",
+    "Plessy v. Ferguson (1896): upheld “separate but equal.” Harlan dissented: “Our Constitution is color-blind.”",
+    "Brown v. Board (1954): school segregation violates equal protection; overturned Plessy.",
+    "Korematsu (1944): upheld Japanese American internment, putting security over civil liberties."
+  ]},
+  accused: { c: 4, name: "Rights of the accused", notes: [
+    "Miranda v. Arizona (1966): warnings about silence and a lawyer before custodial questioning.",
+    "Gideon v. Wainwright (1963): states must provide lawyers to poor felony defendants (started in Florida).",
+    "Mapp v. Ohio (1961): illegally obtained evidence is excluded in state courts."
+  ]},
+  speech: { c: 4, name: "Speech, press & religion cases", notes: [
+    "Schenck (1919): speech can be limited if it creates a “clear and present danger.”",
+    "Tinker (1969): students keep free speech at school unless it substantially disrupts.",
+    "Engel v. Vitale (1962): school-sponsored prayer violates the Establishment Clause.",
+    "New York Times v. U.S. (1971): Pentagon Papers, no prior restraint without a very heavy burden."
+  ]},
+  exec: { c: 4, name: "Presidents & executive actions", notes: [
+    "United States v. Nixon (1974): no one is above the law; led to Nixon's resignation after Watergate.",
+    "Monroe Doctrine (1823): no new European colonies in the Americas.",
+    "Executive Order 9066 (1942) relocated Japanese Americans; Executive Order 9981 (1948) desegregated the military."
+  ]},
+  legislation: { c: 4, name: "Landmark legislation", notes: [
+    "Civil Rights Act of 1964: bans discrimination in public places and jobs (race, color, religion, sex, national origin).",
+    "Voting Rights Act of 1965: banned literacy tests; federal oversight of elections.",
+    "Social Security Act (1935): New Deal unemployment insurance and old-age pensions.",
+    "Interstate Commerce Act (1887) regulated railroads; Sherman Antitrust Act (1890) targeted monopolies."
+  ]}
+};
+
+const STYLES = {
+  source: "Primary-source passages",
+  scenario: "Scenarios & descriptions",
+  recall: "Direct knowledge"
+};
+
+const STYLE_TIPS = {
+  source: "Before reading the choices, sum up the passage in one sentence of your own. Pick the choice that restates that point, and cross out choices that are true facts but are not what this passage says.",
+  scenario: "Strip the story down to the one key fact: who acted, and what right, power, or principle is involved. Then match that fact to the amendment, clause, or case.",
+  recall: "These test pure memory. Turn the notes for your weakest topics into flashcards and drill them for 10 minutes a day."
+};
+
+const BANK = [
+// ---------- Competency 1: American Democracy ----------
+{id:"c1-01",t:"roots",s:"recall",q:"Which ancient society practiced a form of direct democracy in which eligible male citizens voted on laws themselves in an assembly?",o:["Athens","The Roman Republic","Sparta","The Persian Empire"],a:0,e:"Athenian citizens met in the Assembly and voted directly on laws. Rome is the classic example of a republic, where citizens elected officials to govern instead."},
+{id:"c1-02",t:"roots",s:"recall",q:"The Founders borrowed which idea MOST directly from the Roman Republic?",o:["Citizens elect representatives who make laws on their behalf","Every citizen votes directly on every law","Power passes down through a royal family","Religious leaders hold political authority"],a:0,e:"Rome had elected officials and a senate that acted for citizens. That model of representative government is called republicanism, and it shapes the U.S. Congress."},
+{id:"c1-03",t:"roots",s:"source",p:"The great and chief end, therefore, of men’s uniting into commonwealths, and putting themselves under government, is the preservation of their property.",src:"John Locke, Second Treatise of Government (1690)",q:"Locke used “property” to mean people’s lives, liberties, and estates. Which idea in the Declaration of Independence BEST reflects this passage?",o:["Governments are created to secure people’s natural rights","Kings receive their authority directly from God","Government should own and distribute all property","A strong ruler is needed to keep order at any cost"],a:0,e:"Locke says people form governments to protect rights they already have. Jefferson echoes this: “to secure these rights, Governments are instituted among Men.” The second choice is divine right, which Locke rejected; the last is closer to Hobbes."},
+{id:"c1-04",t:"roots",s:"recall",q:"Which statement reflects the ideas of Thomas Hobbes rather than John Locke?",o:["People should give up their freedoms to an absolute ruler to escape a violent state of nature","People may overthrow a government that violates their natural rights","Government power should be divided among separate branches","Government gets its authority from the general will of the people"],a:0,e:"Hobbes, in Leviathan, thought life without government would be “nasty, brutish, and short,” so people should submit to a powerful sovereign. The other choices match Locke, Montesquieu, and Rousseau."},
+{id:"c1-05",t:"roots",s:"source",p:"When the legislative and executive powers are united in the same person, or in the same body of magistrates, there can be no liberty.",src:"Baron de Montesquieu, The Spirit of the Laws (1748)",q:"Which feature of the U.S. Constitution MOST directly reflects this idea?",o:["Dividing government into legislative, executive, and judicial branches","Dividing power between the national and state governments","Adding a Bill of Rights","Choosing the president through the Electoral College"],a:0,e:"Montesquieu warns against combining the power to make laws with the power to enforce them. That is separation of powers. Federalism also divides power, but between levels of government, which is not what the passage describes."},
+{id:"c1-06",t:"principles",s:"scenario",q:"A state governor refuses to obey a ruling of the state supreme court, claiming that the governor’s office places him above the courts. Which principle is the governor violating?",o:["Rule of law","Federalism","Popular sovereignty","Republicanism"],a:0,e:"Rule of law means everyone, including government officials, must follow the law. Claiming to be above the courts contradicts it directly."},
+{id:"c1-07",t:"principles",s:"scenario",q:"Congress passes a bill. The president vetoes it. Congress then overrides the veto with a two-thirds vote in both houses. What does this sequence BEST illustrate?",o:["Checks and balances","Federalism","Judicial review","Popular sovereignty"],a:0,e:"The veto is the president’s check on Congress, and the override is Congress’s check on the president. Each branch limits the other."},
+{id:"c1-08",t:"principles",s:"scenario",q:"States set their own requirements for getting a driver’s license, while only the national government can print money. This arrangement is an example of",o:["federalism","separation of powers","checks and balances","judicial review"],a:0,e:"Federalism divides power between the national government and the states. Separation of powers divides power among branches of the same government. Mixing these two up is a very common mistake."},
+{id:"c1-09",t:"principles",s:"source",p:"Congress shall make no law respecting an establishment of religion, or prohibiting the free exercise thereof; or abridging the freedom of speech, or of the press...",src:"First Amendment, U.S. Constitution",q:"The wording “Congress shall make no law” BEST reflects which principle?",o:["Limited government","Majority rule","Federal supremacy","Popular sovereignty"],a:0,e:"The amendment lists things the government may not do. Placing restrictions on government power is what limited government means."},
+{id:"c1-10",t:"principles",s:"scenario",q:"Voters in a state approve a ballot measure that raises the state minimum wage, even though the state legislature had voted against the idea. Which principle does this BEST illustrate?",o:["Popular sovereignty","Judicial review","Checks and balances","Federal supremacy"],a:0,e:"Citizens using a ballot initiative to make law directly shows that authority rests with the people. Checks and balances is tempting, but it describes branches of government limiting each other."},
+{id:"c1-11",t:"principles",s:"recall",q:"Why does the Constitution protect speech that most people find offensive or unpopular?",o:["To protect the rights of the minority from the will of the majority","To make sure the majority always gets its way","To give the federal government more control over the press","To limit who can vote in elections"],a:0,e:"American democracy combines majority rule with minority rights. Protecting unpopular speech keeps a majority from silencing people it disagrees with."},
+{id:"c1-12",t:"principles",s:"scenario",q:"A homeowner sues a neighbor for damaging her fence and asks the court to order the neighbor to pay for repairs. What kind of case is this?",o:["Civil law","Criminal law","Military law","Constitutional law"],a:0,e:"Civil cases are disputes between private parties, usually over money or property. In a criminal case, the government prosecutes someone for breaking a law."},
+{id:"c1-13",t:"forms",s:"scenario",p:"• Leaders are chosen in regular, free elections\n• A written constitution limits the power of officials\n• Elected representatives make the laws\n• Citizens’ rights are protected by law",src:"A country is described by these traits",q:"Which form of government is BEST described by these traits?",o:["Constitutional republic","Direct democracy","Absolute monarchy","Oligarchy"],a:0,e:"Elected representatives plus a constitution that limits power describe a constitutional republic. Direct democracy is the trap: there, citizens make laws themselves instead of through representatives."},
+{id:"c1-14",t:"forms",s:"scenario",p:"• One political party controls the government\n• Elections are not held or are not competitive\n• The state controls newspapers and broadcasting\n• Criticism of leaders is punished",src:"A country is described by these traits",q:"Which type of government is described?",o:["Totalitarian dictatorship","Constitutional monarchy","Parliamentary democracy","Confederation"],a:0,e:"Total state control over politics, media, and dissent marks a totalitarian dictatorship. A constitutional monarchy keeps a monarch but limits that monarch’s power by law."},
+{id:"c1-15",t:"forms",s:"recall",q:"In a parliamentary system such as the United Kingdom’s, how is the head of government usually chosen?",o:["By the majority party or coalition in the legislature","In a separate national election, like the U.S. president","By the highest national court","Through hereditary succession"],a:0,e:"A prime minister is the leader of the legislature’s majority party or coalition. In the U.S. presidential system, the executive is elected separately from Congress."},
+{id:"c1-16",t:"forms",s:"recall",q:"Which description fits a confederal system of government, like the one created by the Articles of Confederation?",o:["States keep most power, and the central government is weak","The central government holds nearly all power","Power is divided evenly among three branches","A monarch shares power with an elected parliament"],a:0,e:"In a confederation, states give only limited powers to a weak central government. The Articles’ failures led the Founders to a federal system with a stronger national government."},
+{id:"c1-17",t:"participation",s:"recall",q:"Which of the following is a right of U.S. citizens but NOT a legal obligation?",o:["Voting in elections","Paying taxes","Serving on a jury when summoned","Obeying federal, state, and local laws"],a:0,e:"No law requires citizens to vote. Paying taxes, obeying laws, and serving on a jury when summoned are legal duties."},
+{id:"c1-18",t:"participation",s:"scenario",q:"Maria moved to the United States as a lawful permanent resident. Years later she passes a civics test, takes an oath of allegiance, and becomes a U.S. citizen. This process is called",o:["naturalization","ratification","incorporation","apportionment"],a:0,e:"Naturalization is how an immigrant becomes a citizen. Ratification is approving a constitution or amendment, incorporation applies the Bill of Rights to the states, and apportionment divides House seats by population."},
+{id:"c1-19",t:"participation",s:"recall",q:"What is the MAIN goal that separates a political party from an interest group?",o:["A party nominates candidates and tries to win elections to control government","A party focuses on influencing one specific issue","A party interprets the laws passed by Congress","A party enforces federal regulations"],a:0,e:"Interest groups try to influence policy, often on one issue, but don’t run their own candidates. Parties run candidates to gain control of government."},
+{id:"c1-20",t:"participation",s:"scenario",q:"Residents want their city to add a stop sign at a dangerous intersection. Which action is the MOST direct way to achieve this?",o:["Speaking at a city council meeting and submitting a petition","Writing a letter to the U.S. Supreme Court","Asking the governor to veto a state law","Contacting their U.S. senator about federal highway funding"],a:0,e:"Local traffic decisions belong to local government. The FCLE often tests whether you can match a problem to the right level of government."},
+
+// ---------- Competency 2: The U.S. Constitution ----------
+{id:"c2-01",t:"structure",s:"recall",q:"Which article of the Constitution creates the legislative branch and lists the powers of Congress?",o:["Article I","Article II","Article III","Article V"],a:0,e:"Article I covers Congress, Article II the president, Article III the courts, Article IV the states, Article V amendments, Article VI supremacy, and Article VII ratification."},
+{id:"c2-02",t:"structure",s:"scenario",q:"After an attack on a U.S. naval base, the president asks for a formal declaration of war. Under the Constitution, who has the power to declare war?",o:["Congress","The president","The secretary of defense","The Supreme Court"],a:0,e:"Article I gives Congress the power to declare war. The president is commander in chief and directs the military but cannot formally declare war."},
+{id:"c2-03",t:"structure",s:"recall",q:"Which statement correctly describes the impeachment process for federal officials?",o:["The House brings charges, and the Senate holds the trial and can remove the official with a two-thirds vote","The Senate brings charges, and the House holds the trial","The Supreme Court brings charges, and Congress votes to remove","The president brings charges, and the Senate votes to remove"],a:0,e:"The House impeaches (formally accuses) by majority vote. The Senate tries the case, and conviction requires two-thirds. The chief justice presides when a president is tried."},
+{id:"c2-04",t:"federalism",s:"source",p:"To make all Laws which shall be necessary and proper for carrying into Execution the foregoing Powers, and all other Powers vested by this Constitution in the Government of the United States...",src:"Article I, Section 8, U.S. Constitution",q:"This clause is the basis for which type of congressional power?",o:["Implied powers","Reserved powers","Only the powers listed word for word","Judicial review"],a:0,e:"The Necessary and Proper (Elastic) Clause lets Congress do what it needs to carry out its listed powers. Those are implied powers, upheld in McCulloch v. Maryland. Reserved powers belong to the states."},
+{id:"c2-05",t:"structure",s:"recall",q:"The president negotiates a treaty with another country. What must happen before it takes effect?",o:["Two-thirds of the Senate must approve it","A majority of the House must approve it","The Supreme Court must review it","Three-fourths of the states must ratify it"],a:0,e:"Article II requires the advice and consent of two-thirds of senators present. It is a legislative check on the president’s foreign policy power."},
+{id:"c2-06",t:"structure",s:"source",p:"The Judges, both of the supreme and inferior Courts, shall hold their Offices during good Behaviour...",src:"Article III, Section 1, U.S. Constitution",q:"What is the MAIN purpose of this provision?",o:["To keep judges independent from political pressure","To let voters remove judges they disagree with","To require judges to follow the president’s policies","To limit judges to a single term"],a:0,e:"“During good behaviour” means federal judges serve for life unless impeached. With no elections to win, judges can rule against popular opinion or powerful officials."},
+{id:"c2-07",t:"structure",s:"scenario",q:"A man is arrested and held in jail for weeks without being charged or brought before a judge. Which legal action could his lawyer use to challenge the detention?",o:["A petition for a writ of habeas corpus","A petition for a constitutional amendment","A request for a presidential pardon","A filibuster"],a:0,e:"A writ of habeas corpus forces the government to bring a prisoner before a court and justify holding him. Article I, Section 9 allows suspending it only in cases of rebellion or invasion."},
+{id:"c2-08",t:"federalism",s:"source",p:"The powers not delegated to the United States by the Constitution, nor prohibited by it to the States, are reserved to the States respectively, or to the people.",src:"Tenth Amendment, U.S. Constitution",q:"Which power is BEST supported as a state power by this amendment?",o:["Setting up and running public schools","Coining money","Declaring war","Making treaties with foreign nations"],a:0,e:"Education isn’t delegated to the national government, so it is reserved to the states. The other three are powers the Constitution gives to the national government."},
+{id:"c2-09",t:"federalism",s:"scenario",q:"A state passes a law letting businesses pay workers less than the federal minimum wage. If the law is challenged in court, what is the MOST likely result?",o:["Federal law controls because of the Supremacy Clause","The state law controls because of the Tenth Amendment","Congress must hold a national vote to decide","The governor decides which law applies"],a:0,e:"Article VI makes valid federal laws “the supreme Law of the Land,” so they win over conflicting state laws. The Tenth Amendment is the trap: it covers powers not given to the national government, and Congress has power over wages through the Commerce Clause."},
+{id:"c2-10",t:"federalism",s:"recall",q:"Which power is shared by both the national and state governments (a concurrent power)?",o:["Collecting taxes","Coining money","Conducting foreign policy","Issuing marriage licenses"],a:0,e:"Both levels can tax, borrow money, and set up courts. Coining money and foreign policy belong only to the national government; marriage licenses are a state power."},
+{id:"c2-11",t:"bor",s:"scenario",q:"A public school requires every student to recite a teacher-led prayer each morning. Which part of the Constitution does this MOST likely violate?",o:["The Establishment Clause of the First Amendment","The Free Exercise Clause of the First Amendment","The Second Amendment","The Equal Protection Clause"],a:0,e:"Government-sponsored prayer means the government is endorsing religion (see Engel v. Vitale). Free Exercise is the trap: it protects a person’s right to practice their own religion."},
+{id:"c2-12",t:"bor",s:"scenario",q:"Police suspect a woman of selling stolen goods. Without a warrant or her consent, they enter her house and search her closets. Which amendment protects her?",o:["Fourth Amendment","Fifth Amendment","Sixth Amendment","Eighth Amendment"],a:0,e:"The Fourth Amendment protects against unreasonable searches and seizures and generally requires a warrant based on probable cause."},
+{id:"c2-13",t:"bor",s:"scenario",q:"At his trial, a defendant chooses not to testify, and the judge tells the jury it may not treat his silence as evidence of guilt. Which right is being protected?",o:["The Fifth Amendment protection against self-incrimination","The Sixth Amendment right to a speedy trial","The First Amendment right to free speech","The Eighth Amendment ban on cruel and unusual punishment"],a:0,e:"The Fifth Amendment says no one shall be compelled to be a witness against himself in a criminal case. It also protects against double jeopardy and guarantees due process."},
+{id:"c2-14",t:"bor",s:"scenario",q:"A man accused of robbery waits in jail for four years without a trial, and no one explains the delay. Which right has MOST likely been violated?",o:["The right to a speedy and public trial","The right to bear arms","Protection against quartering soldiers","The right to petition the government"],a:0,e:"The Sixth Amendment guarantees a speedy and public trial by an impartial jury, along with the right to a lawyer and to confront witnesses."},
+{id:"c2-15",t:"bor",s:"scenario",q:"A judge sets bail at $5 million for a person accused of shoplifting a $20 item. Which amendment could the defense argue is being violated?",o:["Eighth Amendment","Fourth Amendment","Seventh Amendment","Tenth Amendment"],a:0,e:"The Eighth Amendment bans excessive bail, excessive fines, and cruel and unusual punishment. The Seventh covers jury trials in civil cases."},
+{id:"c2-16",t:"amendments",s:"source",p:"No State shall make or enforce any law which shall abridge the privileges or immunities of citizens of the United States; nor shall any State deprive any person of life, liberty, or property, without due process of law; nor deny to any person within its jurisdiction the equal protection of the laws.",src:"Fourteenth Amendment, Section 1 (1868)",q:"What was the MOST significant effect of this section?",o:["It limited what state governments could do to people’s rights","It gave Congress the power to tax incomes","It ended the slave trade with other countries","It gave women the right to vote"],a:0,e:"Notice “No State shall.” The Fourteenth Amendment restricts state governments, and it later became the basis for applying most of the Bill of Rights to the states and for cases like Brown v. Board."},
+{id:"c2-17",t:"amendments",s:"recall",q:"Which amendment, ratified in 1870, prohibits denying the right to vote because of race, color, or previous condition of servitude?",o:["Fifteenth","Thirteenth","Nineteenth","Twenty-sixth"],a:0,e:"The Reconstruction Amendments: 13th (1865) ended slavery, 14th (1868) citizenship and equal protection, 15th (1870) voting regardless of race. The 19th (1920) gave women the vote; the 26th (1971) set the voting age at 18."},
+{id:"c2-18",t:"amendments",s:"scenario",q:"Before 1913, U.S. senators were chosen by state legislatures. What change did the Seventeenth Amendment make, and which principle did it strengthen?",o:["Voters elect senators directly, strengthening popular sovereignty","Senators serve life terms, strengthening judicial independence","States get senators by population, strengthening federalism","The president appoints senators, strengthening executive power"],a:0,e:"The Seventeenth Amendment moved the choice of senators from state legislatures to voters, giving the people a more direct voice."},
+{id:"c2-19",t:"amendments",s:"recall",q:"Which amendment banned poll taxes in federal elections, removing a barrier used to keep Black and poor citizens from voting?",o:["Twenty-fourth","Fifteenth","Nineteenth","Twenty-second"],a:0,e:"The Twenty-fourth Amendment (1964) banned poll taxes in federal elections. The Twenty-second limits presidents to two terms."},
+{id:"c2-20",t:"amendments",s:"recall",q:"What is the MOST commonly used process for amending the Constitution?",o:["Two-thirds of both houses of Congress propose it, and three-fourths of the states ratify it","A majority of Congress proposes it, and the president signs it","The Supreme Court proposes it, and a majority of states approve it","A national referendum approves it by majority vote"],a:0,e:"Article V. Every amendment so far was proposed by Congress, and the president plays no formal role. The U.S. has no national referendum."},
+
+// ---------- Competency 3: Founding Documents ----------
+{id:"c3-01",t:"english",s:"recall",q:"Why is the Magna Carta (1215) considered an important influence on American government?",o:["It established that even the monarch was bound by the law","It was the first written constitution for a democracy","It gave all English people the right to vote","It declared the colonies independent from England"],a:0,e:"English nobles forced King John to accept limits on his power, such as protection from unlawful imprisonment. The idea that rulers are subject to law runs through the Constitution."},
+{id:"c3-02",t:"english",s:"source",p:"[We] solemnly and mutually, in the presence of God and one of another, covenant and combine ourselves together into a civil body politic... and by virtue hereof to enact, constitute, and frame such just and equal laws... as shall be thought most meet and convenient for the general good of the Colony; unto which we promise all due submission and obedience.",src:"Mayflower Compact (1620), modernized spelling",q:"Which principle does this passage BEST demonstrate?",o:["Self-government based on the consent of the governed","The divine right of kings","Separation of church and state","Judicial review"],a:0,e:"The settlers agreed among themselves to form a government and obey the laws it made, an early example of self-government and the social contract. The mention of God is there to pull you toward the wrong answers."},
+{id:"c3-03",t:"english",s:"source",p:"That excessive bail ought not to be required, nor excessive fines imposed, nor cruel and unusual punishments inflicted.",src:"English Bill of Rights (1689)",q:"Which part of the U.S. Constitution most closely follows this language?",o:["Eighth Amendment","Fourth Amendment","Article II","Tenth Amendment"],a:0,e:"The Eighth Amendment repeats this almost word for word. The English Bill of Rights also influenced the right to petition and limits on standing armies."},
+{id:"c3-04",t:"english",s:"scenario",q:"In 1765 Parliament passed the Stamp Act, taxing printed materials in the colonies. Colonists protested: “No taxation without representation.” What was their MAIN argument?",o:["Only a legislature that included their own elected representatives could tax them","Taxes should be paid only by wealthy colonists","Parliament had no authority to make any laws for the colonies","Tax money should be spent on westward expansion"],a:0,e:"As English subjects, colonists said they could be taxed only with consent through their own representatives, and they had none in Parliament. It was an argument about political rights."},
+{id:"c3-05",t:"declaration",s:"recall",q:"What was the MAIN purpose of the Declaration of Independence?",o:["To explain why the colonies were justified in separating from Great Britain","To set up the structure of the new national government","To list the powers of Congress and the president","To guarantee individual rights like free speech"],a:0,e:"The Declaration explains the reasons for independence. The Constitution sets up the government, and the Bill of Rights protects specific rights. Mixing up these documents is one of the most common FCLE mistakes."},
+{id:"c3-06",t:"declaration",s:"source",p:"We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty and the pursuit of Happiness.",src:"Declaration of Independence (1776)",q:"According to this passage, where do people’s basic rights come from?",o:["They are natural rights people have by birth, not gifts from government","They are granted by the king and can be taken away","They are created by laws passed by Congress","They are earned through military service"],a:0,e:"“Unalienable” rights “endowed by their Creator” exist before any government and can’t be taken away. Government’s job is to protect them, which is Locke’s natural rights theory."},
+{id:"c3-07",t:"declaration",s:"source",p:"For imposing Taxes on us without our Consent:\nFor depriving us in many cases, of the benefits of Trial by Jury:",src:"Declaration of Independence (1776), list of grievances",q:"Which provisions of the U.S. Constitution MOST directly respond to these complaints?",o:["Tax bills must start in the elected House of Representatives, and accused criminals have a right to a jury trial","The president commands the armed forces, and judges serve for life","States may coin their own money, and juries are chosen by governors","Congress may suspend habeas corpus, and the Senate approves treaties"],a:0,e:"Article I, Section 7 requires revenue bills to start in the House, the branch closest to the people, and Article III and the Sixth Amendment guarantee jury trials. Many Constitution provisions answer specific grievances in the Declaration."},
+{id:"c3-08",t:"declaration",s:"source",p:"Let me now take a more comprehensive view, and warn you in the most solemn manner against the baneful effects of the spirit of party, generally.",src:"George Washington, Farewell Address (1796)",q:"Which concern is Washington expressing?",o:["Political parties could divide the nation and weaken the government","The national government was too weak to defend the country","Foreign alliances were needed to keep the peace","The states should have more power than Congress"],a:0,e:"Washington warned that party rivalry could stir up conflict and division. He also warned against permanent foreign alliances, so the third choice is the opposite of his view."},
+{id:"c3-09",t:"convention",s:"scenario",q:"In 1786–87, Massachusetts farmers led by Daniel Shays rebelled over debts and taxes, and the national government could not raise an army to respond. What did Shays’ Rebellion MOST clearly show?",o:["The national government under the Articles of Confederation was too weak","The states had given up too much power to Congress","The president had too much military power","The Supreme Court had overstepped its authority"],a:0,e:"Under the Articles there was no president, no national court, and no power to tax, so Congress couldn’t act. The rebellion pushed leaders to call the Constitutional Convention. The last two choices are traps: neither a president nor a Supreme Court existed yet."},
+{id:"c3-10",t:"convention",s:"recall",q:"Which was a major achievement of Congress under the Articles of Confederation?",o:["The Northwest Ordinance, which set a process for admitting new states equal to the original ones","A national income tax","The creation of the Supreme Court","The election of the first president"],a:0,e:"The Northwest Ordinance (1787) organized the territory north of the Ohio River, created a path to statehood, encouraged public education, and banned slavery there."},
+{id:"c3-11",t:"convention",s:"recall",q:"At the Constitutional Convention, the Virginia Plan proposed basing representation in Congress on population. Why did the smaller states object?",o:["The larger states would control Congress","The smaller states wanted no national legislature at all","The plan let the president choose representatives","The plan eliminated state governments"],a:0,e:"Small states backed the New Jersey Plan, with equal representation. The Great Compromise blended both: a House based on population and a Senate with two members per state."},
+{id:"c3-12",t:"convention",s:"recall",q:"What did the Three-Fifths Compromise decide?",o:["Three of every five enslaved people would be counted for representation and taxes","Three-fifths of the states had to approve new laws","Enslaved people would receive three-fifths of a vote","Three-fifths of Congress could override a veto"],a:0,e:"Southern states wanted enslaved people counted to gain House seats; Northern states objected. Enslaved people had no vote at all, and a veto override takes two-thirds."},
+{id:"c3-13",t:"ratification",s:"recall",q:"Many Anti-Federalists opposed ratifying the Constitution. Which promise helped win ratification in key states like Virginia and New York?",o:["Adding a bill of rights after ratification","Giving states the power to coin money","Electing the president by direct popular vote","Allowing states to leave the Union"],a:0,e:"Anti-Federalists feared a strong national government would threaten individual liberty. Federalists promised amendments, and Madison drafted what became the Bill of Rights, ratified in 1791."},
+{id:"c3-14",t:"ratification",s:"source",p:"In a republic, the manners, sentiments, and interests of the people should be similar. If this be not the case, there will be a constant clashing of opinions; and the representatives of one part will be continually striving against those of the other.",src:"Brutus No. 1, Anti-Federalist essay (1787)",q:"Brutus is MOST likely arguing that",o:["a nation as large and varied as the United States cannot work well as a single republic","factions can be controlled by making the republic larger","the Constitution needs a stronger executive","the states should be abolished"],a:0,e:"Brutus says a republic needs people with similar interests, so a huge, diverse country will be torn by conflict. The second choice is Madison’s opposing argument in Federalist No. 10, a trap if you mix up the two sides."},
+{id:"c3-15",t:"ratification",s:"source",p:"Ambition must be made to counteract ambition. The interest of the man must be connected with the constitutional rights of the place.",src:"James Madison, Federalist No. 51 (1788)",q:"Which principle is Madison describing?",o:["Checks and balances","Popular sovereignty","Federal supremacy","Majority rule"],a:0,e:"Madison wants each branch to have the motive and the means to resist the others. Officials’ ambition to protect their own branch keeps any one branch from taking over."},
+{id:"c3-16",t:"ratification",s:"source",p:"Energy in the executive is a leading character in the definition of good government.",src:"Alexander Hamilton, Federalist No. 70 (1788)",q:"Hamilton uses this argument to support",o:["a single president rather than a council of executives","a weak executive controlled by Congress","electing the president through state legislatures","limiting the president to one term"],a:0,e:"Hamilton argued one person can act quickly and be held accountable, while a committee would be slow and could dodge blame. Anti-Federalists worried a single executive could act like a king."},
+{id:"c3-17",t:"ratification",s:"source",p:"The complete independence of the courts of justice is peculiarly essential in a limited Constitution.",src:"Alexander Hamilton, Federalist No. 78 (1788)",q:"Based on the passage, why does Hamilton support lifetime appointments for federal judges?",o:["Independent judges can enforce the Constitution’s limits on the other branches without fear","Judges should follow public opinion closely","Life terms make the judiciary the strongest branch","Judges must answer to state legislatures"],a:0,e:"A “limited Constitution” needs courts that can strike down acts that go beyond its limits, and judges can only do that if they don’t depend on the branches they check. The third choice overstates: Hamilton called the judiciary the least dangerous branch."},
+{id:"c3-18",t:"laterdocs",s:"source",p:"The history of mankind is a history of repeated injuries and usurpations on the part of man toward woman, having in direct object the establishment of an absolute tyranny over her.",src:"Declaration of Sentiments, Seneca Falls Convention (1848)",q:"The authors MOST likely modeled this sentence on the Declaration of Independence in order to",o:["argue that women were owed the rights the nation’s founding had promised","propose a new government to replace the Constitution","support independence from Great Britain","argue that the states should have more power"],a:0,e:"The sentence mirrors the Declaration’s charge against King George. Borrowing that language let the authors claim the founding ideals for women, including the right to vote."},
+{id:"c3-19",t:"laterdocs",s:"source",p:"...all persons held as slaves within any State or designated part of a State, the people whereof shall then be in rebellion against the United States, shall be then, thenceforward, and forever free...",src:"Abraham Lincoln, Emancipation Proclamation (1863)",q:"Which statement about this proclamation is MOST accurate?",o:["It applied only to areas in rebellion, so slavery stayed legal in loyal border states","It abolished slavery everywhere in the United States","It was an amendment to the Constitution","It was passed by Congress as a law"],a:0,e:"Lincoln issued it as an executive war measure covering only Confederate-held areas. Slavery ended nationwide with the Thirteenth Amendment in 1865."},
+{id:"c3-20",t:"laterdocs",s:"source",p:"Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.",src:"Abraham Lincoln, Gettysburg Address (1863)",q:"“Four score and seven years ago” points back to 1776. Why did Lincoln date the nation’s founding to the Declaration of Independence instead of the Constitution?",o:["To tie the war’s purpose to the Declaration’s ideal of equality","Because the Constitution had been repealed","To argue that the states were never truly united","Because the Declaration created the federal government"],a:0,e:"Lincoln framed the Civil War as a test of whether a nation founded on equality could survive. The last choice is a trap: the Declaration did not create a government."},
+
+// ---------- Competency 4: Landmark Cases & Laws ----------
+{id:"c4-01",t:"federal",s:"source",p:"Thus, the particular phraseology of the constitution of the United States confirms and strengthens the principle, supposed to be essential to all written constitutions, that a law repugnant to the constitution is void; and that courts, as well as other departments, are bound by that instrument.",src:"Chief Justice John Marshall, Marbury v. Madison (1803)",q:"What power did the Supreme Court claim through this reasoning?",o:["The power to declare laws unconstitutional","The power to appoint federal judges","The power to enforce its decisions with troops","The power to propose constitutional amendments"],a:0,e:"Marbury established judicial review. The Constitution doesn’t state this power outright; Marshall reasoned it from the idea that the Constitution is the supreme law."},
+{id:"c4-02",t:"federal",s:"source",p:"...the power to tax involves the power to destroy...",src:"Chief Justice John Marshall, McCulloch v. Maryland (1819)",q:"Maryland had taxed the Bank of the United States. What was the impact of the Court’s ruling?",o:["It strengthened the national government by upholding implied powers and barring states from taxing federal institutions","It allowed states to tax and regulate federal agencies","It declared the national bank unconstitutional","It limited Congress to powers listed word for word in the Constitution"],a:0,e:"The Court said Congress could create a bank under the Necessary and Proper Clause, and a state tax on it would let states destroy federal institutions, violating the Supremacy Clause."},
+{id:"c4-03",t:"federal",s:"scenario",q:"New York gave one company the exclusive right to run steamboats between New York and New Jersey. A competitor with a federal license challenged it. In Gibbons v. Ogden (1824), the Court ruled that",o:["Congress’s power to regulate interstate commerce overrode the state’s monopoly","states may regulate all trade that crosses their borders","the federal government cannot license businesses","steamboat travel did not count as commerce"],a:0,e:"Gibbons read the Commerce Clause broadly, including navigation between states, and strengthened federal power over the national economy."},
+{id:"c4-04",t:"civil",s:"recall",q:"In Dred Scott v. Sandford (1857), the Court ruled that Black Americans could not be citizens and that Congress could not ban slavery in the territories. Which later change MOST directly overturned the citizenship ruling?",o:["The Fourteenth Amendment, which made all persons born in the U.S. citizens","The Nineteenth Amendment","The Civil Rights Act of 1964","Brown v. Board of Education"],a:0,e:"The Fourteenth Amendment’s first sentence grants citizenship to all persons born or naturalized in the United States, reversing Dred Scott. The Thirteenth Amendment ended slavery itself."},
+{id:"c4-05",t:"civil",s:"source",p:"Our Constitution is color-blind, and neither knows nor tolerates classes among citizens.",src:"Justice John Marshall Harlan, dissenting in Plessy v. Ferguson (1896)",q:"Harlan wrote this in disagreement with the Court’s majority. What did the majority decide?",o:["Racial segregation in public facilities was legal if facilities were “separate but equal”","Segregated schools were unconstitutional","Formerly enslaved people could not be citizens","Literacy tests for voting were unconstitutional"],a:0,e:"The majority upheld segregation under “separate but equal.” Harlan dissented alone; Brown v. Board overturned Plessy in 1954. Watch for the trap of treating a dissent’s view as the Court’s ruling."},
+{id:"c4-06",t:"civil",s:"scenario",q:"A Kansas family sued because their daughter had to attend a segregated school far from home instead of a nearby school for white students. The Supreme Court’s 1954 ruling in this case",o:["held that segregated public schools violate the Equal Protection Clause","upheld segregation as long as schools were equally funded","applied only to colleges and universities","immediately ended segregation in every public place"],a:0,e:"Brown v. Board of Education found that separate schools are inherently unequal. The last choice overstates: desegregation took years, and other areas were addressed later by laws like the Civil Rights Act of 1964."},
+{id:"c4-07",t:"civil",s:"recall",q:"Which Supreme Court decision upheld the forced relocation of Japanese Americans during World War II, placing national security above civil liberties?",o:["Korematsu v. United States","Schenck v. United States","Brown v. Board of Education","Gideon v. Wainwright"],a:0,e:"Korematsu (1944) upheld actions under Executive Order 9066. The ruling is now widely condemned. Schenck is also a wartime case, but it concerns speech."},
+{id:"c4-08",t:"accused",s:"scenario",q:"Before questioning a suspect in custody, officers tell him he has the right to remain silent and the right to an attorney. This practice is required because of",o:["Miranda v. Arizona","Mapp v. Ohio","Gideon v. Wainwright","Marbury v. Madison"],a:0,e:"Miranda (1966) requires police to warn suspects of their Fifth Amendment right against self-incrimination and their right to a lawyer before custodial interrogation."},
+{id:"c4-09",t:"accused",s:"scenario",q:"A man charged with a felony in Florida cannot afford a lawyer. He asks the court to appoint one, the judge refuses, and he is convicted. Which case established his right to a court-appointed lawyer?",o:["Gideon v. Wainwright","Miranda v. Arizona","Tinker v. Des Moines","Plessy v. Ferguson"],a:0,e:"Clarence Earl Gideon’s case began in Florida. In 1963 the Court held that the Sixth Amendment right to counsel applies to the states through the Fourteenth Amendment."},
+{id:"c4-10",t:"accused",s:"scenario",q:"Police search a woman’s home without a valid warrant and find illegal materials. Her lawyer asks the judge to throw out the evidence. Which case supports the request?",o:["Mapp v. Ohio","Gibbons v. Ogden","Engel v. Vitale","United States v. Nixon"],a:0,e:"Mapp (1961) applied the exclusionary rule to state courts: evidence from an unconstitutional search can’t be used at trial."},
+{id:"c4-11",t:"speech",s:"source",p:"The most stringent protection of free speech would not protect a man in falsely shouting fire in a theatre and causing a panic.",src:"Justice Oliver Wendell Holmes, Schenck v. United States (1919)",q:"Which principle does this passage BEST support?",o:["Freedom of speech is not absolute and can be limited in some circumstances","Free speech protects any statement as long as it is spoken aloud","The government may never punish speech","Only the press, not individuals, has free speech rights"],a:0,e:"Schenck created the “clear and present danger” test, upholding a conviction for anti-draft leaflets during World War I. The middle two choices use extreme wording."},
+{id:"c4-12",t:"speech",s:"scenario",q:"Students wear T-shirts with a peaceful protest message about a government policy. Classes go on normally, but the principal suspends them. Which case BEST supports the students?",o:["Tinker v. Des Moines","Schenck v. United States","Plessy v. Ferguson","McCulloch v. Maryland"],a:0,e:"Tinker (1969) held that students keep free speech rights at school unless their expression substantially disrupts learning. Schenck is the trap; it dealt with speech posing a clear and present danger."},
+{id:"c4-13",t:"speech",s:"recall",q:"In Engel v. Vitale (1962), the Supreme Court ruled that",o:["official, school-sponsored prayer in public schools violates the Establishment Clause","students may not pray privately at school","public schools must offer religion classes","states may require a daily prayer if it is nondenominational"],a:0,e:"New York’s prayer was nondenominational and voluntary, but the Court said a government-written prayer establishes religion. Students can still pray on their own, so the second choice is a common misconception."},
+{id:"c4-14",t:"speech",s:"scenario",q:"In 1971 the federal government tried to stop newspapers from publishing the Pentagon Papers, a secret study of the Vietnam War. In New York Times Co. v. United States, the Court ruled that",o:["the government had not met the heavy burden needed to block publication in advance","national security always outweighs freedom of the press","newspapers must get government approval before printing classified material","the newspapers had committed treason"],a:0,e:"The Court rejected prior restraint (blocking publication before it happens) in this case, protecting freedom of the press. The second and third choices use extreme wording."},
+{id:"c4-15",t:"exec",s:"recall",q:"In United States v. Nixon (1974), President Nixon claimed executive privilege to withhold tape recordings from a criminal investigation. What did the Court decide?",o:["He had to turn over the tapes, because no one is above the law","He could keep the tapes, because executive privilege is absolute","Congress, not the courts, had to settle the dispute","The tapes were protected by the Fourth Amendment"],a:0,e:"The unanimous ruling forced the release of the Watergate tapes, and Nixon resigned soon after. The case shows the rule of law and judicial review applied to the president."},
+{id:"c4-16",t:"exec",s:"source",p:"...the American continents, by the free and independent condition which they have assumed and maintain, are henceforth not to be considered as subjects for future colonization by any European powers...",src:"President James Monroe, Annual Message to Congress (1823)",q:"What policy is Monroe announcing?",o:["European nations should not create new colonies in the Western Hemisphere","The United States would establish colonies in Europe","The United States would join European alliances","The United States would annex Latin American nations"],a:0,e:"This is the Monroe Doctrine. It warned Europe against new colonization or interference in the Americas, while the U.S. would stay out of European affairs."},
+{id:"c4-17",t:"exec",s:"recall",q:"In 1948, President Harry Truman issued Executive Order 9981. What did it do?",o:["Began desegregating the U.S. armed forces","Ordered the relocation of Japanese Americans","Created the Social Security system","Ended the military draft"],a:0,e:"Executive Order 9981 required equal treatment and opportunity in the military regardless of race. Executive orders don’t need a vote of Congress. The second choice was Executive Order 9066 (1942)."},
+{id:"c4-18",t:"legislation",s:"scenario",q:"In 1963, a restaurant in Alabama refuses to serve Black customers, and a company refuses to promote women to management. Which law, passed the next year, made both practices illegal?",o:["Civil Rights Act of 1964","Voting Rights Act of 1965","Social Security Act of 1935","Interstate Commerce Act of 1887"],a:0,e:"The Civil Rights Act of 1964 banned discrimination in public accommodations and in employment based on race, color, religion, sex, or national origin."},
+{id:"c4-19",t:"legislation",s:"recall",q:"What was the MAIN purpose of the Voting Rights Act of 1965?",o:["To end practices like literacy tests that kept Black citizens from voting","To lower the voting age to 18","To give women the right to vote","To create the Electoral College"],a:0,e:"The Voting Rights Act banned literacy tests and gave the federal government power to oversee elections in places with a history of discrimination, enforcing the Fifteenth Amendment’s promise."},
+{id:"c4-20",t:"legislation",s:"source",p:"We can never insure one hundred percent of the population against one hundred percent of the hazards and vicissitudes of life, but we have tried to frame a law which will give some measure of protection to the average citizen and to his family against the loss of a job and against poverty-ridden old age.",src:"President Franklin D. Roosevelt, signing statement (1935)",q:"Which law was Roosevelt MOST likely signing?",o:["Social Security Act","Civil Rights Act","Sherman Antitrust Act","Voting Rights Act"],a:0,e:"The Social Security Act (1935), part of the New Deal, created unemployment insurance and old-age pensions. The clue words are “loss of a job” and “old age.”"}
+];
+
+const byId = {};
+BANK.forEach(b => byId[b.id] = b);
+const PASS = 60;
+const KEY = "fcle-lab-v1", SKEY = "fcle-lab-session-v1";
+const LETTERS = ["A","B","C","D"];
+const app = document.getElementById("app");
+
+function loadDB(){ try { const r = localStorage.getItem(KEY); if (r) { const d = JSON.parse(r); if (d && d.attempts) return d; } } catch(e){} return { attempts: [], qstats: {} }; }
+function saveDB(){ try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch(e){} }
+function loadSession(){ try { const r = localStorage.getItem(SKEY); return r ? JSON.parse(r) : null; } catch(e){ return null; } }
+function saveSession(){ try { if (S) localStorage.setItem(SKEY, JSON.stringify(S)); } catch(e){} }
+function clearSession(){ try { localStorage.removeItem(SKEY); } catch(e){} }
+
+let DB = loadDB();
+let S = null;          // active test session
+let view = "home";     // home | test | results | confirm-finish
+let R = null;          // attempt shown in results
+let reviewFilter = "missed";
+let navOpen = false;
+let confirmClear = false;
+let timerId = null;
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function pct(c, n){ return n ? Math.round(100 * c / n) : 0; }
+function fmtTime(sec){ sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ":" + String(m).padStart(2,"0") : m) + ":" + String(s).padStart(2,"0"); }
+function fmtDate(iso){ const d = new Date(iso); return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); }
+function status(p, n){
+  if (!n) return { cls: "none", label: "Not tested" };
+  if (p >= 80) return { cls: "good", label: "Strong" };
+  if (p >= 60) return { cls: "warn", label: "Almost there" };
+  return { cls: "bad", label: "Revise" };
+}
+
+/* ---------- aggregated mastery from recent attempts ---------- */
+function recentTopicStats(limit){
+  const agg = {};
+  DB.attempts.slice(-limit).forEach(a => {
+    Object.entries(a.byTopic).forEach(([t, [c, n]]) => { agg[t] = agg[t] || [0, 0]; agg[t][0] += c; agg[t][1] += n; });
+  });
+  return agg;
+}
+function readiness(){
+  const fulls = DB.attempts.slice(-3);
+  if (!fulls.length) return null;
+  let c = 0, n = 0; fulls.forEach(a => { c += a.correct; n += a.total; });
+  const p = pct(c, n);
+  let label, cls, note;
+  if (p >= 72) { label = "On track to pass"; cls = "good"; note = "Your recent scores sit well above the 60% line. Keep drilling weak topics so a bad day can’t sink you."; }
+  else if (p >= 60) { label = "Borderline"; cls = "warn"; note = "You’re passing, but only just. A few missed questions on test day could drop you under 48/80. Focus on the topics marked Revise."; }
+  else { label = "Not ready yet"; cls = "bad"; note = "You need about " + Math.max(1, Math.ceil(0.6 * 80) - Math.round(p * 0.8)) + " more correct answers out of 80 to pass. Work through the weak-spot drill daily."; }
+  return { p, label, cls, note, count: fulls.length };
+}
+
+/* ---------- starting sessions ---------- */
+function makeSession(mode, label, ids, feedback){
+  S = {
+    mode, label, feedback: !!feedback,
+    qs: ids.map(id => ({ id, order: shuffle([0,1,2,3]) })),
+    ans: {}, flags: {}, checked: {}, idx: 0,
+    limit: mode === "exam" ? 160 * 60 : 0,
+    elapsed: 0, halfShown: false
+  };
+  S.startedAt = Date.now();
+  navOpen = false;
+  saveSession();
+  view = "test";
+  startTimer();
+  render();
+  window.scrollTo(0, 0);
+}
+function balancedPick(n){
+  const per = n / 4, out = [];
+  [1,2,3,4].forEach(c => { out.push(...shuffle(BANK.filter(b => TOPICS[b.t].c === c)).slice(0, per).map(b => b.id)); });
+  return shuffle(out);
+}
+function weakPick(n){
+  const agg = recentTopicStats(5);
+  const topics = Object.keys(TOPICS).filter(t => agg[t]).sort((a, b) => pct(...agg[a]) - pct(...agg[b]));
+  const picked = [];
+  for (const t of topics) {
+    const qs = BANK.filter(b => b.t === t);
+    const missed = qs.filter(b => DB.qstats[b.id] && DB.qstats[b.id].last === false);
+    const rest = qs.filter(b => !missed.includes(b));
+    for (const b of [...shuffle(missed), ...shuffle(rest)]) { if (picked.length < n && !picked.includes(b.id)) picked.push(b.id); }
+    if (picked.length >= n) break;
+  }
+  return shuffle(picked);
+}
+
+/* ---------- timer ---------- */
+function elapsedNow(){ return S ? (Date.now() - S.startedAt) / 1000 : 0; }
+function startTimer(){
+  stopTimer();
+  timerId = setInterval(() => {
+    if (!S || view !== "test" && view !== "confirm-finish") return;
+    S.elapsed = elapsedNow();
+    const el = document.getElementById("clock");
+    if (el) el.textContent = S.limit ? fmtTime(S.limit - S.elapsed) : fmtTime(S.elapsed);
+    if (S.limit && !S.halfShown && S.elapsed >= S.limit / 2) { S.halfShown = true; render(); }
+    if (S.limit && S.elapsed >= S.limit) { finish(); return; }
+    if (Math.round(S.elapsed) % 10 === 0) saveSession();
+  }, 1000);
+}
+function stopTimer(){ if (timerId) clearInterval(timerId); timerId = null; }
+
+/* ---------- finishing ---------- */
+function finish(){
+  stopTimer();
+  S.elapsed = elapsedNow();
+  let correct = 0; const byTopic = {}, byComp = {}, byStyle = {}; const items = [];
+  const inc = (o, k, ok) => { o[k] = o[k] || [0, 0]; o[k][1]++; if (ok) o[k][0]++; };
+  S.qs.forEach(x => {
+    const b = byId[x.id]; const ch = S.ans[x.id]; const ok = ch === b.a;
+    if (ok) correct++;
+    inc(byTopic, b.t, ok); inc(byComp, TOPICS[b.t].c, ok); inc(byStyle, b.s, ok);
+    items.push({ id: x.id, ch: ch === undefined ? null : ch, order: x.order, fl: !!S.flags[x.id] });
+    const q = DB.qstats[x.id] || { seen: 0, correct: 0 };
+    q.seen++; if (ok) q.correct++; q.last = ok; DB.qstats[x.id] = q;
+  });
+  const att = { k: Date.now(), date: new Date().toISOString(), mode: S.mode, label: S.label, total: S.qs.length, correct, byTopic, byComp, byStyle, items, secs: Math.round(S.elapsed) };
+  DB.attempts.push(att);
+  if (DB.attempts.length > 40) DB.attempts = DB.attempts.slice(-40);
+  saveDB(); clearSession();
+  S = null; R = att;
+  reviewFilter = att.correct === att.total ? "all" : "missed";
+  view = "results"; render(); window.scrollTo(0, 0);
+}
+
+/* ---------- rendering ---------- */
+function render(){
+  if (view === "home") app.innerHTML = homeView();
+  else if (view === "test" || view === "confirm-finish") app.innerHTML = testView();
+  else if (view === "results") app.innerHTML = resultsView(R);
+}
+
+function bar(p, opts = {}){
+  const st = status(p, opts.n === undefined ? 1 : opts.n);
+  return `<div class="bar ${st.cls}" role="img" aria-label="${p}%"><span style="width:${p}%"></span>${opts.mark ? `<i class="mark" style="left:${PASS}%"></i>` : ""}</div>`;
+}
+
+function homeView(){
+  const saved = loadSession();
+  const rd = readiness();
+  const agg = recentTopicStats(5);
+  const hasData = DB.attempts.length > 0;
+  return `
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Florida Civic Literacy Examination</p>
+      <h1>FCLE Practice Lab</h1>
+      <p class="lede">80 questions in the official format, scored against the real passing line of 60% (48 of 80). After each test you get a breakdown of where you lost points and what to revise.</p>
+    </div>
+  </header>
+
+  ${saved ? `<section class="panel resume">
+    <div><strong>You have a test in progress.</strong><br><span class="muted">${esc(saved.label)} · ${Object.keys(saved.ans).length} of ${saved.qs.length} answered</span></div>
+    <div class="row"><button class="btn primary" data-act="resume">Resume</button><button class="btn ghost" data-act="discard">Discard</button></div>
+  </section>` : ""}
+
+  <section class="ready panel">
+    ${rd ? `
+      <div class="ready-score"><span class="num">${rd.p}%</span><span class="muted small">avg. of last ${rd.count} attempt${rd.count > 1 ? "s" : ""}</span></div>
+      <div class="ready-text"><span class="pill ${rd.cls}">${rd.label}</span><p>${rd.note}</p>${bar(rd.p, { mark: true })}<p class="small muted">Line marks the 60% passing score.</p></div>
+    ` : `
+      <div class="ready-text"><span class="pill none">No score yet</span><p>Start with the full practice exam. It gives you a baseline score and shows exactly which of the 19 topics need work.</p></div>
+    `}
+  </section>
+
+  <h2 class="section-h">Choose a test</h2>
+  <div class="modes">
+    <article class="mode feature">
+      <p class="eyebrow">Recommended first</p>
+      <h3>Full practice exam</h3>
+      <p>80 questions, 160-minute timer, 20 per competency. No answers until the end, just like test day.</p>
+      <button class="btn primary" data-act="start-exam">Start exam</button>
+    </article>
+    <article class="mode">
+      <h3>Quick quiz</h3>
+      <p>20 mixed questions, 5 from each competency. Explanations after every answer.</p>
+      <button class="btn" data-act="start-quiz">Start quiz</button>
+    </article>
+    <article class="mode">
+      <h3>Weak-spot drill</h3>
+      <p>${hasData ? "20 questions pulled from your lowest-scoring topics, starting with ones you missed." : "Unlocks after your first test. It targets the topics you score lowest on."}</p>
+      <button class="btn" data-act="start-weak" ${hasData ? "" : "disabled"}>Start drill</button>
+    </article>
+  </div>
+
+  <h2 class="section-h">Practice one competency</h2>
+  <div class="comps">
+    ${[1,2,3,4].map(c => `<button class="comp-btn" data-act="start-comp" data-c="${c}"><span class="cn">Competency ${c}</span><span class="ct">${COMPS[c]}</span><span class="small muted">20 questions · with explanations</span></button>`).join("")}
+  </div>
+
+  <h2 class="section-h">Topic mastery ${hasData ? `<span class="small muted">from your last ${Math.min(5, DB.attempts.length)} attempt${DB.attempts.length > 1 ? "s" : ""}</span>` : ""}</h2>
+  <div class="mastery">
+    ${[1,2,3,4].map(c => `
+      <div class="m-comp">
+        <h4>${COMPS[c]}</h4>
+        ${Object.entries(TOPICS).filter(([, v]) => v.c === c).map(([t, v]) => {
+          const s = agg[t]; const p = s ? pct(...s) : 0; const st = status(p, s ? s[1] : 0);
+          return `<button class="m-row" data-act="start-topic" data-t="${t}" title="Drill this topic">
+            <span class="m-name">${v.name}</span>
+            <span class="m-bar">${s ? bar(p) : `<div class="bar none"><span style="width:0"></span></div>`}</span>
+            <span class="m-val ${st.cls}">${s ? p + "%" : "—"}</span>
+          </button>`;
+        }).join("")}
+      </div>`).join("")}
+  </div>
+  <p class="small muted">Tap any topic to drill just that topic.</p>
+
+  ${hasData ? `
+  <h2 class="section-h">Your attempts</h2>
+  <ol class="history">
+    ${DB.attempts.slice().reverse().map(a => { const p = pct(a.correct, a.total); const st = p >= PASS ? "good" : "bad"; return `
+      <li><button class="h-row" data-act="view-attempt" data-k="${a.k}">
+        <span class="h-label"><strong>${esc(a.label)}</strong><span class="small muted">${fmtDate(a.date)}</span></span>
+        <span class="h-score"><span class="num">${p}%</span><span class="small muted">${a.correct}/${a.total}</span></span>
+        <span class="pill ${st}">${p >= PASS ? "Pass" : "Below 60%"}</span>
+      </button></li>`; }).join("")}
+  </ol>
+  <div class="row">${confirmClear
+    ? `<span class="small">Delete all scores and history from this browser?</span><button class="btn danger" data-act="clear-yes">Delete history</button><button class="btn ghost" data-act="clear-no">Cancel</button>`
+    : `<button class="btn ghost small-btn" data-act="clear-ask">Clear history</button>`}</div>` : ""}
+
+  <footer class="foot small muted">
+    <p>These are original practice questions written to match the style of the Florida Department of Education’s FCLE sample items: primary-source passages, scenarios, and recall across the four competencies. The real exam uses different questions. Your progress is saved in this browser only.</p>
+  </footer>`;
+}
+
+function testView(){
+  const x = S.qs[S.idx]; const b = byId[x.id];
+  const chosen = S.ans[x.id]; const checked = S.feedback && S.checked[x.id];
+  const answered = Object.keys(S.ans).length;
+  const comp = TOPICS[b.t].c;
+  const confirming = view === "confirm-finish";
+  const unanswered = S.qs.length - answered;
+  return `
+  <div class="testbar">
+    <div class="tb-inner">
+      <div class="tb-left"><strong>${esc(S.label)}</strong><span class="small muted">Question ${S.idx + 1} of ${S.qs.length} · ${answered} answered</span></div>
+      <div class="tb-right">
+        <span class="clock" aria-label="${S.limit ? "Time remaining" : "Time elapsed"}"><span class="small muted">${S.limit ? "Left" : "Time"}</span> <span id="clock">${S.limit ? fmtTime(S.limit - elapsedNow()) : fmtTime(elapsedNow())}</span></span>
+        <button class="btn small-btn" data-act="toggle-nav" aria-expanded="${navOpen}">${navOpen ? "Hide" : "All"} questions</button>
+        <button class="btn primary small-btn" data-act="finish-ask">Finish</button>
+      </div>
+    </div>
+    <div class="progress"><span style="width:${pct(answered, S.qs.length)}%"></span></div>
+  </div>
+
+  ${confirming ? `<div class="panel confirm">
+    <p><strong>Finish and score this test?</strong> ${unanswered ? `You have ${unanswered} unanswered question${unanswered > 1 ? "s" : ""}; they will be marked wrong. On the real FCLE there is no penalty for guessing, so answer every question.` : "You have answered every question."}</p>
+    <div class="row"><button class="btn primary" data-act="finish-yes">Score my test</button><button class="btn ghost" data-act="finish-no">Keep working</button></div>
+  </div>` : ""}
+
+  ${S.limit && S.halfShown && S.elapsed < S.limit / 2 + 300 ? `<div class="panel note small">Halfway through the time. The real FCLE allows a break at 80 minutes, so stand up and stretch if you need to.</div>` : ""}
+
+  ${navOpen ? `<div class="panel navgrid">
+    ${S.qs.map((q, i) => `<button class="nav-cell ${S.ans[q.id] !== undefined ? "done" : ""} ${S.flags[q.id] ? "flag" : ""} ${i === S.idx ? "cur" : ""}" data-act="goto" data-n="${i}" aria-label="Question ${i + 1}">${i + 1}</button>`).join("")}
+    <p class="small muted legend"><span class="sw done"></span>Answered <span class="sw flag"></span>Flagged <span class="sw"></span>Not answered</p>
+  </div>` : ""}
+
+  <div class="qwrap ${b.p ? "has-p" : ""}">
+    ${b.p ? `<aside class="passage">
+      <p class="p-label">${b.s === "source" ? "Use the passage below to answer the question" : "Use the information below to answer the question"}</p>
+      <blockquote>${esc(b.p).replace(/\n/g, "<br>")}</blockquote>
+      <p class="p-src">${b.s === "source" ? "Source: " : ""}${esc(b.src)}</p>
+    </aside>` : ""}
+    <section class="question">
+      <p class="q-meta small muted">Competency ${comp} · ${COMPS[comp]}</p>
+      <h2 class="q-stem">${S.idx + 1}. ${esc(b.q)}</h2>
+      <div class="opts" role="radiogroup">
+        ${x.order.map((oi, k) => {
+          let cls = "";
+          if (chosen === oi) cls += " chosen";
+          if (checked) { if (oi === b.a) cls += " right"; else if (chosen === oi) cls += " wrong"; }
+          return `<button class="opt${cls}" role="radio" aria-checked="${chosen === oi}" data-act="choose" data-i="${oi}" ${checked ? "disabled" : ""}><span class="letter">${LETTERS[k]}</span><span>${esc(b.o[oi])}</span></button>`;
+        }).join("")}
+      </div>
+      ${checked ? `<div class="feedback ${chosen === b.a ? "good" : "bad"}">
+        <p><strong>${chosen === b.a ? "Correct." : "Not quite. The answer is " + LETTERS[x.order.indexOf(b.a)] + "."}</strong> ${esc(b.e)}</p>
+        <p class="small muted">Topic: ${TOPICS[b.t].name}</p>
+      </div>` : ""}
+      <div class="qnav">
+        <button class="btn ghost" data-act="prev" ${S.idx === 0 ? "disabled" : ""}>Previous</button>
+        <button class="btn ghost flagbtn ${S.flags[x.id] ? "on" : ""}" data-act="flag" aria-pressed="${!!S.flags[x.id]}">${S.flags[x.id] ? "Flagged" : "Flag for review"}</button>
+        ${S.idx < S.qs.length - 1 ? `<button class="btn primary" data-act="next">Next</button>` : `<button class="btn primary" data-act="finish-ask">Finish test</button>`}
+      </div>
+      <p class="small muted keys">Keys: A–D to answer, ← → to move${S.feedback ? "" : ", F to flag"}.</p>
+    </section>
+  </div>`;
+}
+
+function resultsView(a){
+  const p = pct(a.correct, a.total);
+  const passed = p >= PASS;
+  const need = Math.ceil(a.total * PASS / 100);
+  const topics = Object.entries(a.byTopic).map(([t, [c, n]]) => ({ t, c, n, p: pct(c, n) })).sort((x, y) => x.p - y.p || y.n - x.n);
+  const weak = topics.filter(x => x.p < 80).slice(0, 3);
+  const styles = Object.entries(a.byStyle).map(([s, [c, n]]) => ({ s, c, n, p: pct(c, n) })).sort((x, y) => x.p - y.p);
+  const weakStyle = styles.length > 1 && styles[0].p < 80 ? styles[0] : null;
+  const perQ = a.secs / a.total;
+  const missed = a.items.filter(i => i.ch !== byId[i.id].a);
+  const flagged = a.items.filter(i => i.fl);
+  const list = reviewFilter === "missed" ? missed : reviewFilter === "flagged" ? flagged : a.items;
+  const margin = a.correct - need;
+  const headline = a.total === 80
+    ? (passed ? (margin >= 8 ? `You passed with ${margin} questions to spare.` : `You passed, but only by ${margin === 0 ? "the minimum" : margin + " question" + (margin > 1 ? "s" : "")}.`) : `You were ${need - a.correct} correct answer${need - a.correct > 1 ? "s" : ""} short of passing.`)
+    : (passed ? "Above the passing line on this set." : "Below the passing line on this set.");
+
+  return `
+  <div class="row back"><button class="btn ghost small-btn" data-act="home">← Dashboard</button></div>
+  <header class="r-hero panel">
+    <div class="r-score">
+      <span class="eyebrow">${esc(a.label)} · ${fmtDate(a.date)}</span>
+      <span class="big num">${p}%</span>
+      <span class="muted">${a.correct} of ${a.total} correct · pass needs ${need} (60%)</span>
+    </div>
+    <div class="r-sum">
+      <span class="pill ${passed ? "good" : "bad"}">${passed ? "Passing score" : "Below passing"}</span>
+      <p class="r-head">${headline}</p>
+      ${bar(p, { mark: true })}
+      <p class="small muted">Time used ${fmtTime(a.secs)} · about ${perQ >= 60 ? (perQ / 60).toFixed(1) + " min" : Math.round(perQ) + " sec"} per question${a.mode === "exam" ? (perQ > 120 ? ". That’s over the real pace of 2 minutes per question." : ". The real pace is 2 minutes per question, so you have room.") : "."}</p>
+    </div>
+  </header>
+
+  <h2 class="section-h">By competency <span class="small muted">each is about 25% of the real test</span></h2>
+  <div class="panel comp-res">
+    ${[1,2,3,4].filter(c => a.byComp[c]).map(c => { const [cc, n] = a.byComp[c]; const cp = pct(cc, n); const st = status(cp, n); return `
+      <div class="cr-row">
+        <span class="cr-name"><span class="small muted">Competency ${c}</span>${COMPS[c]}</span>
+        <span class="cr-bar">${bar(cp, { mark: true })}</span>
+        <span class="cr-val"><span class="num">${cp}%</span><span class="small muted">${cc}/${n}</span></span>
+        <span class="pill ${st.cls}">${st.label}</span>
+      </div>`; }).join("")}
+  </div>
+
+  ${weak.length ? `
+  <h2 class="section-h">Revise these first</h2>
+  <div class="revise">
+    ${weak.map((w, i) => `<article class="rv panel">
+      <div class="rv-head"><span class="rank">${i + 1}</span><div><h3>${TOPICS[w.t].name}</h3><span class="small muted">${COMPS[TOPICS[w.t].c]} · ${w.c}/${w.n} correct (${w.p}%)</span></div></div>
+      <p class="small strong">Key points to study</p>
+      <ul>${TOPICS[w.t].notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>
+      <button class="btn" data-act="start-topic" data-t="${w.t}">Drill this topic</button>
+    </article>`).join("")}
+  </div>` : `<div class="panel note">Every topic on this test was 80% or higher. Take another full exam to confirm it, then use the competency drills to stay sharp.</div>`}
+
+  ${weakStyle ? `
+  <h2 class="section-h">Question style</h2>
+  <div class="panel styles">
+    ${styles.map(s => `<div class="cr-row"><span class="cr-name">${STYLES[s.s]}</span><span class="cr-bar">${bar(s.p, { mark: true })}</span><span class="cr-val"><span class="num">${s.p}%</span><span class="small muted">${s.c}/${s.n}</span></span></div>`).join("")}
+    <p class="tip"><strong>Your weakest style is ${STYLES[weakStyle.s].toLowerCase()}.</strong> ${STYLE_TIPS[weakStyle.s]}</p>
+  </div>` : ""}
+
+  <h2 class="section-h">All topics on this test</h2>
+  <div class="panel tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Topic</th><th>Competency</th><th class="r">Score</th><th>Status</th><th></th></tr></thead>
+      <tbody>${topics.map(x => { const st = status(x.p, x.n); return `<tr><td>${TOPICS[x.t].name}</td><td class="muted">${TOPICS[x.t].c}</td><td class="r num">${x.c}/${x.n}</td><td><span class="pill ${st.cls}">${st.label}</span></td><td class="r"><button class="link" data-act="start-topic" data-t="${x.t}">Drill</button></td></tr>`; }).join("")}</tbody>
+    </table>
+  </div>
+
+  <div class="row next-steps">
+    ${missed.length ? `<button class="btn primary" data-act="retry-missed" data-k="${a.k}">Retry the ${missed.length} I missed</button>` : ""}
+    <button class="btn" data-act="start-weak">Weak-spot drill</button>
+    <button class="btn" data-act="start-exam">New full exam</button>
+  </div>
+
+  <h2 class="section-h">Review answers</h2>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="${reviewFilter === "missed"}" data-act="filter" data-f="missed">Missed (${missed.length})</button>
+    <button role="tab" aria-selected="${reviewFilter === "flagged"}" data-act="filter" data-f="flagged">Flagged (${flagged.length})</button>
+    <button role="tab" aria-selected="${reviewFilter === "all"}" data-act="filter" data-f="all">All (${a.items.length})</button>
+  </div>
+  <div class="review">
+    ${list.length ? list.map(it => reviewItem(it, a.items.indexOf(it))).join("") : `<p class="muted">Nothing here.</p>`}
+  </div>`;
+}
+
+function reviewItem(it, n){
+  const b = byId[it.id]; const ok = it.ch === b.a;
+  return `<article class="rev panel ${ok ? "ok" : "no"}">
+    <p class="small muted">Question ${n + 1} · ${TOPICS[b.t].name} · ${STYLES[b.s]}${it.fl ? " · Flagged" : ""}</p>
+    ${b.p ? `<blockquote class="rev-p">${esc(b.p).replace(/\n/g, "<br>")}<span class="p-src">${b.s === "source" ? "Source: " : ""}${esc(b.src)}</span></blockquote>` : ""}
+    <h3 class="q-stem">${esc(b.q)}</h3>
+    <ul class="rev-opts">${it.order.map((oi, k) => {
+      const cls = oi === b.a ? "right" : (it.ch === oi ? "wrong" : "");
+      const tag = oi === b.a ? "Correct answer" : (it.ch === oi ? "Your answer" : "");
+      return `<li class="${cls}"><span class="letter">${LETTERS[k]}</span><span>${esc(b.o[oi])}</span>${tag ? `<em>${tag}</em>` : ""}</li>`;
+    }).join("")}</ul>
+    ${it.ch === null ? `<p class="small bad-text">You left this one blank.</p>` : ""}
+    <p class="expl"><strong>${ok ? "Why it’s right:" : "Why:"}</strong> ${esc(b.e)}</p>
+  </article>`;
+}
+
+/* ---------- events ---------- */
+app.addEventListener("click", e => {
+  const el = e.target.closest("[data-act]"); if (!el || el.disabled) return;
+  const act = el.dataset.act;
+  switch (act) {
+    case "start-exam": makeSession("exam", "Full practice exam", shuffle(BANK.map(b => b.id)), false); break;
+    case "start-quiz": makeSession("quiz", "Quick quiz", balancedPick(20), true); break;
+    case "start-weak": if (DB.attempts.length) makeSession("drill", "Weak-spot drill", weakPick(20), true); break;
+    case "start-comp": { const c = +el.dataset.c; makeSession("drill", "Competency " + c + " drill", shuffle(BANK.filter(b => TOPICS[b.t].c === c).map(b => b.id)), true); break; }
+    case "start-topic": { const t = el.dataset.t; makeSession("drill", TOPICS[t].name + " drill", shuffle(BANK.filter(b => b.t === t).map(b => b.id)), true); break; }
+    case "retry-missed": { const a = DB.attempts.find(x => x.k === +el.dataset.k); if (a) makeSession("drill", "Retry missed questions", shuffle(a.items.filter(i => i.ch !== byId[i.id].a).map(i => i.id)), true); break; }
+    case "resume": { S = loadSession(); if (S) { S.startedAt = Date.now() - (S.elapsed || 0) * 1000; view = "test"; startTimer(); render(); } break; }
+    case "discard": clearSession(); render(); break;
+    case "choose": {
+      const x = S.qs[S.idx]; if (S.feedback && S.checked[x.id]) break;
+      S.ans[x.id] = +el.dataset.i; if (S.feedback) S.checked[x.id] = true;
+      saveSession(); render(); break;
+    }
+    case "prev": if (S.idx > 0) { S.idx--; saveSession(); render(); window.scrollTo(0, 0); } break;
+    case "next": if (S.idx < S.qs.length - 1) { S.idx++; saveSession(); render(); window.scrollTo(0, 0); } break;
+    case "goto": S.idx = +el.dataset.n; navOpen = false; saveSession(); render(); window.scrollTo(0, 0); break;
+    case "flag": { const id = S.qs[S.idx].id; S.flags[id] = !S.flags[id]; saveSession(); render(); break; }
+    case "toggle-nav": navOpen = !navOpen; render(); break;
+    case "finish-ask": view = "confirm-finish"; render(); window.scrollTo(0, 0); break;
+    case "finish-no": view = "test"; render(); break;
+    case "finish-yes": finish(); break;
+    case "home": view = "home"; confirmClear = false; render(); window.scrollTo(0, 0); break;
+    case "view-attempt": { R = DB.attempts.find(x => x.k === +el.dataset.k); if (R) { reviewFilter = "missed"; view = "results"; render(); window.scrollTo(0, 0); } break; }
+    case "filter": reviewFilter = el.dataset.f; render(); break;
+    case "clear-ask": confirmClear = true; render(); break;
+    case "clear-no": confirmClear = false; render(); break;
+    case "clear-yes": DB = { attempts: [], qstats: {} }; saveDB(); confirmClear = false; render(); break;
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if (view !== "test" || !S || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest && e.target.closest("input,textarea")) return;
+  const k = e.key.toLowerCase(); const x = S.qs[S.idx];
+  const li = ["a","b","c","d"].indexOf(k);
+  if (li >= 0 || ["1","2","3","4"].includes(k)) {
+    const pos = li >= 0 ? li : +k - 1;
+    if (S.feedback && S.checked[x.id]) return;
+    S.ans[x.id] = x.order[pos]; if (S.feedback) S.checked[x.id] = true; saveSession(); render();
+  } else if (e.key === "ArrowRight") { if (S.idx < S.qs.length - 1) { S.idx++; saveSession(); render(); } }
+  else if (e.key === "ArrowLeft") { if (S.idx > 0) { S.idx--; saveSession(); render(); } }
+  else if (k === "f" && !S.feedback) { S.flags[x.id] = !S.flags[x.id]; saveSession(); render(); }
+});
+
+render();
+</script>
+
+</body></html>
